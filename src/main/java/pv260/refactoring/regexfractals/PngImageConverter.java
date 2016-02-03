@@ -9,43 +9,43 @@ import javax.imageio.ImageIO;
 
 public class PngImageConverter extends AsciiImageConverter {
 
-	private File outputFile;
+    private File outputFile;
 
-	public PngImageConverter(File outputFile) {
-		this.outputFile = outputFile;
-	}
+    public PngImageConverter(File outputFile) {
+        this.outputFile = outputFile;
+    }
 
     /**
-	 * {@inheritDoc }
-	 * <p>
-	 * as a side effect creates a file (name passed in constructor)
-	 * containing the resulting image
-	 * @return always null
-	 */
-	@Override
-	public String convert(Color[][] colorPattern, int pixelSize) {
-		validatePixelSize(pixelSize);
-		int width = colorPattern[0].length * pixelSize;
-		int height = colorPattern.length * pixelSize;
-		BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
-		Graphics2D g2d = image.createGraphics();
-		for (int x = 0; x < colorPattern[0].length; x++) {
-			for (int y = 0; y < colorPattern.length; y++) {
-				g2d.setColor(colorPattern[y][x]);
-				g2d.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
-			}
-		}
-		output(image);
-		return null;
-	}
+     * {@inheritDoc }
+     * <p>
+     * as a side effect creates a file (name passed in constructor)
+     * containing the resulting image
+     * @return always null
+     */
+    @Override
+    public String convert(Matrix<Color> colorPattern, int pixelSize) {
+        validatePixelSize(pixelSize);
+        BufferedImage image = new BufferedImage(colorPattern.width() * pixelSize,
+                                                colorPattern.height() * pixelSize,
+                                                BufferedImage.TYPE_INT_RGB);
+        Graphics2D g2d = image.createGraphics();
+        for (int row = 0; row < colorPattern.height(); row++) {
+            for (int col = 0; col < colorPattern.width(); col++) {
+                g2d.setColor(colorPattern.get(col, row));
+                g2d.fillRect(col * pixelSize, row * pixelSize, pixelSize, pixelSize);
+            }
+        }
+        output(image);
+        return null;
+    }
 
-	private void output(BufferedImage image) {
-		try {
-			ImageIO.write(image, "png", outputFile);
-		} catch (IOException ex) {
-			throw new IllegalStateException("Cant write image to " + outputFile, ex);
-		}
+    private void output(BufferedImage image) {
+        try {
+            ImageIO.write(image, "png", outputFile);
+        } catch (IOException ex) {
+            throw new IllegalStateException("Cant write image to " + outputFile, ex);
+        }
 
-	}
+    }
 
 }

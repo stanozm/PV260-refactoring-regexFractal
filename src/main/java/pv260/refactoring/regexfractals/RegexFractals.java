@@ -42,18 +42,18 @@ public class RegexFractals {
 
         RegexColorizer colorizer = new RegexColorizer(compile(parsedArgs.pattern()));
         FractalGrid grid = new FractalGrid(parsedArgs.gridSide(), 1);
-        Color[][] colorizedGrid = colorize(grid, colorizer);
+        Matrix<Color> colorizedGrid = colorize(grid, colorizer);
         prepareOutputFolder();
         outputAscii(colorizedGrid, parsedArgs.pixelSize());
         outputPng(colorizedGrid, parsedArgs.pixelSize());
     }
 
-    static Color[][] colorize(FractalGrid grid, RegexColorizer colorizer) {
-        Color[][] colorGrid = new Color[grid.side()][grid.side()];
-        for (int i = 0; i < grid.side(); i++) {
-            for (int j = 0; j < grid.side(); j++) {
-                Color pixelColor = colorizer.colorForSignature(grid.signatureOf(i, j));
-                colorGrid[j][i] = pixelColor;
+    static Matrix<Color> colorize(FractalGrid grid, RegexColorizer colorizer) {
+        Matrix<Color> colorGrid = new ArrayBackedMatrix<>(grid.side(), grid.side());
+        for (int row = 0; row < grid.side(); row++) {
+            for (int col = 0; col < grid.side(); col++) {
+                Color pixelColor = colorizer.colorForSignature(grid.signatureOf(col, row));
+                colorGrid.set(pixelColor, col, row);
             }
         }
         return colorGrid;
@@ -63,7 +63,7 @@ public class RegexFractals {
         Files.createDirectories(DEFAULT_OUTPUT_DIRECTORY);
     }
 
-    static void outputAscii(Color[][] colorizedGrid, int pixelSize) throws IOException {
+    static void outputAscii(Matrix<Color> colorizedGrid, int pixelSize) throws IOException {
         AsciiImageConverter asciiConverter = new AsciiImageConverter();
         try (BufferedWriter w = Files.newBufferedWriter(
                 DEFAULT_OUTPUT_DIRECTORY.resolve(DEFAULT_OUTPUT_FILE_ASCII),
@@ -72,7 +72,7 @@ public class RegexFractals {
         }
     }
 
-    static void outputPng(Color[][] colorizedGrid, int pixelSize) {
+    static void outputPng(Matrix<Color> colorizedGrid, int pixelSize) {
         PngImageConverter pngConverter = new PngImageConverter(
                 DEFAULT_OUTPUT_DIRECTORY.resolve(DEFAULT_OUTPUT_FILE_PNG).toFile());
         pngConverter.convert(colorizedGrid, pixelSize);

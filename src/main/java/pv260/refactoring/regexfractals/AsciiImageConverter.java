@@ -10,16 +10,17 @@ import java.util.regex.Pattern;
  */
 public class AsciiImageConverter implements ImageConverter {
 
-    public String convert(Color[][] collorPattern, int pixelSize) {
+    public String convert(Matrix<Color> colorPattern, int pixelSize) {
         validatePixelSize(pixelSize);
-        int gridSide = collorPattern.length;
-        StringBuilder gridBuffer = new StringBuilder(gridSide * gridSide * pixelSize * pixelSize + gridSide * pixelSize);
+        StringBuilder gridBuffer = new StringBuilder(
+                symbolCount(colorPattern.width(), colorPattern.height(), pixelSize));
         //we have to iterate by row
-        for (int x = 0; x < gridSide; x++) {
-            StringBuilder rowBuffer = new StringBuilder(gridSide * pixelSize);
-            for (int y = 0; y < gridSide; y++) {
+        for (int row = 0; row < colorPattern.height(); row++) {
+            StringBuilder rowBuffer = new StringBuilder(
+                    symbolCount(1, colorPattern.width(), pixelSize));
+            for (int col = 0; col < colorPattern.width(); col++) {
                 for (int i = 0; i < pixelSize; i++) {
-                    Color color = collorPattern[x][y];
+                    Color color = colorPattern.get(col, row);
                     rowBuffer.append(color == BLACK ? "\u2588" : " ");
                 }
             }
@@ -32,17 +33,15 @@ public class AsciiImageConverter implements ImageConverter {
         return gridBuffer.toString();
     }
 
+    private int symbolCount(int rows, int columns, int pixelSize){
+        int columnsWithLinebreak = columns+1;
+        int symbolsPerPixel = pixelSize*pixelSize;
+        return rows*columnsWithLinebreak*symbolsPerPixel;
+    }
+
     protected void validatePixelSize(int pixelSize) {
         if (pixelSize <= 0) {
             throw new IndexOutOfBoundsException("Pixel size must be at least 1");
         }
     }
-
-    /**
-     * Paint WHITE if the pattern matches, else BLACK
-     */
-    protected Color colorFor(Pattern pattern, String pixelSignature) {
-        return pattern.matcher(pixelSignature).matches() ? WHITE : BLACK;
-    }
-
 }

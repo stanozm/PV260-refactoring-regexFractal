@@ -14,6 +14,6 @@ public class RegexFractalsStartShortcut {
     //.*(13|31|24|42).*
     @Test
     public void runApp() throws Exception {
-        RegexFractals.main(new String[]{"512a", ".*1a.*"});
+        RegexFractals.main(new String[]{"256", "1", ".*(13|31|24|42).*"});
     }
 }

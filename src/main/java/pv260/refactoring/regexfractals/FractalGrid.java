@@ -20,9 +20,9 @@ public class FractalGrid {
      * @param limit    send in 1 for default behavior
      */
     public FractalGrid(int gridSide, double limit) {
-        QuadrantSlice rootSlize = new QuadrantSlice(gridSide);
+        Fragment root = new FragmentRoot(gridSide);
         signatures = new ArrayBackedMatrix<>(gridSide, gridSide);
-        rootSlize.writeLeavesTo(signatures);
+        root.writeLeavesTo(signatures);
     }
 
     /**
@@ -36,54 +36,84 @@ public class FractalGrid {
         return signatures.width();
     }
 
+    private static class FragmentLeaf extends Fragment {
+
+        public FragmentLeaf(Fragment parent, Quadrant quadrant) {
+            this.size = parent.size / 2;
+            this.accumulatedX = parent.accumulatedX + quadrant.xAddend(size);
+            this.accumulatedY = parent.accumulatedY + quadrant.yAddend(size);
+            this.accumulatedSignature = parent.accumulatedSignature + quadrant.signatureAddend();
+        }
+
+        @Override
+        public void writeLeavesTo(Matrix<String> signaturesArray) {
+            signaturesArray.set(accumulatedSignature, accumulatedX, accumulatedY);
+        }
+    }
+
+    private static class FragmentIntermediate extends FragmentSplittable {
+
+        public FragmentIntermediate(Fragment parent, Quadrant quadrant) {
+            this.size = parent.size / 2;
+            this.accumulatedX = parent.accumulatedX + quadrant.xAddend(size);
+            this.accumulatedY = parent.accumulatedY + quadrant.yAddend(size);
+            this.accumulatedSignature = parent.accumulatedSignature + quadrant.signatureAddend();
+            this.children = createChildren();
+        }
+    }
+
+    private static class FragmentRoot extends FragmentSplittable {
+
+        public FragmentRoot(int size) {
+            this.accumulatedX = 0;
+            this.accumulatedY = 0;
+            this.accumulatedSignature = "";
+            this.size = size;
+            this.children = createChildren();
+        }
+    }
+
+    private static class FragmentSplittable extends Fragment {
+
+        protected List<Fragment> children = Collections.emptyList();
+
+        protected List<Fragment> createChildren() {
+            return asList(
+                    createChild(UPPER_RIGHT),
+                    createChild(UPPER_LEFT),
+                    createChild(LOWER_LEFT),
+                    createChild(LOWER_RIGHT)
+            );
+        }
+
+        private Fragment createChild(Quadrant quadrant) {
+            //if parents size is only 2, his children will be 1, thus leaves
+            if (size == 2) {
+                return new FragmentLeaf(this, quadrant);
+            } else {
+                return new FragmentIntermediate(this, quadrant);
+            }
+        }
+
+        @Override
+        public void writeLeavesTo(Matrix<String> signaturesArray) {
+            for (Fragment child : children) {
+                child.writeLeavesTo(signaturesArray);
+            }
+        }
+    }
+
     /**
      * One quarter of the parents space
      * top left is 2, to right is 1,
      * bottom left is 3, bottom right is 4
      */
-    private static class QuadrantSlice {
+    private abstract static class Fragment {
 
-        private int accumulatedX;
-        private int accumulatedY;
-        private String accumulatedSignature;
-        private boolean isLeaf = false;
-        private List<QuadrantSlice> children = Collections.emptyList();
-
-        /**
-         * use for root
-         * @param size the size left for this slice
-         */
-        public QuadrantSlice(int size) {
-            this.accumulatedX = 0;
-            this.accumulatedY = 0;
-            this.accumulatedSignature = "";
-            children = asList(
-                    new QuadrantSlice(size / 2, accumulatedX, accumulatedY, accumulatedSignature, UPPER_RIGHT),
-                    new QuadrantSlice(size / 2, accumulatedX, accumulatedY, accumulatedSignature, UPPER_LEFT),
-                    new QuadrantSlice(size / 2, accumulatedX, accumulatedY, accumulatedSignature, LOWER_LEFT),
-                    new QuadrantSlice(size / 2, accumulatedX, accumulatedY, accumulatedSignature, LOWER_RIGHT)
-            );
-        }
-
-        /**
-         * use for children
-         * @param size the size left for this slice
-         */
-        public QuadrantSlice(int size, int parentX, int parentY, String parentSignature, Quadrant quadrant) {
-            this.accumulatedX = parentX + quadrant.xAddend(size);
-            this.accumulatedY = parentY + quadrant.yAddend(size);
-            this.accumulatedSignature = parentSignature + quadrant.signatureAddend();
-            if (size == 1) {
-                isLeaf = true;
-            } else { // this is not a child, so create more slices and make those children of this
-                children = asList(
-                        new QuadrantSlice(size / 2, accumulatedX, accumulatedY, accumulatedSignature, UPPER_RIGHT),
-                        new QuadrantSlice(size / 2, accumulatedX, accumulatedY, accumulatedSignature, UPPER_LEFT),
-                        new QuadrantSlice(size / 2, accumulatedX, accumulatedY, accumulatedSignature, LOWER_LEFT),
-                        new QuadrantSlice(size / 2, accumulatedX, accumulatedY, accumulatedSignature, LOWER_RIGHT)
-                );
-            }
-        }
+        protected int accumulatedX;
+        protected int accumulatedY;
+        protected String accumulatedSignature;
+        protected int size;
 
         /**
          * if this is a leaf add its signature to the collecting parameter,
@@ -92,14 +122,6 @@ public class FractalGrid {
          * into the array
          * called from constructor to initialize the signaturesArray
          */
-        private void writeLeavesTo(Matrix<String> signaturesArray) {
-            if (isLeaf) {
-                signaturesArray.set(accumulatedSignature, accumulatedX, accumulatedY);
-            } else {
-                for (QuadrantSlice child : children) {
-                    child.writeLeavesTo(signaturesArray);
-                }
-            }
-        }
+        public abstract void writeLeavesTo(Matrix<String> signaturesArray);
     }
 }

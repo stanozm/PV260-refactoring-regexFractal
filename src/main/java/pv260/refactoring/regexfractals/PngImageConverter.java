@@ -15,9 +15,16 @@ public class PngImageConverter extends AsciiImageConverter {
 		this.outputFile = outputFile;
 	}
 
+    /**
+	 * {@inheritDoc }
+	 * <p>
+	 * as a side effect creates a file (name passed in constructor)
+	 * containing the resulting image
+	 * @return always null
+	 */
 	@Override
-	public String convert(Color[][] colorPattern, int size, int pixelSize) {
-		validatePixSiz(pixelSize);
+	public String convert(Color[][] colorPattern, int pixelSize) {
+		validatePixelSize(pixelSize);
 		int width = colorPattern[0].length * pixelSize;
 		int height = colorPattern.length * pixelSize;
 		BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);

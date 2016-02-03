@@ -4,16 +4,19 @@ import java.awt.Color;
 import java.io.BufferedWriter;
 import static java.lang.String.format;
 import java.io.File;
+import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.regex.Pattern;
+import static java.util.regex.Pattern.compile;
 
 public class RegexFractals {
 
-    private static final int DEFAULT_PIXEL_SIZE = 1;
-    private static final String DEFAULT_OUTPUT_ASCII = "output/fractal.txt";
-    private static final String DEFAULT_OUTPUT_PNG = "output/fractal.png";
+    private static final Path DEFAULT_OUTPUT_DIRECTORY = Paths.get("output");
+    private static final String DEFAULT_OUTPUT_FILE_ASCII = "fractal.txt";
+    private static final String DEFAULT_OUTPUT_FILE_PNG = "fractal.png";
 
     //some nice inputs
     //.*1.*
@@ -37,23 +40,42 @@ public class RegexFractals {
                     + e.causes());
         }
 
-        AsciiImageConverter asciiConverter = new AsciiImageConverter();
+        RegexColorizer colorizer = new RegexColorizer(compile(parsedArgs.pattern()));
         FractalGrid grid = new FractalGrid(parsedArgs.gridSide(), 1);
-        Color[][] colorGrid = new Color[parsedArgs.gridSide()][parsedArgs.gridSide()];
-        for (int i = 0; i < parsedArgs.gridSide(); i++) {
-            for (int j = 0; j < parsedArgs.gridSide(); j++) {
-                Color pixelColor = asciiConverter.colorFor(Pattern.compile(parsedArgs.pattern()), grid.signatureOf(i, j));
+        Color[][] colorizedGrid = colorize(grid, colorizer);
+        prepareOutputFolder();
+        outputAscii(colorizedGrid, parsedArgs.pixelSize());
+        outputPng(colorizedGrid, parsedArgs.pixelSize());
+    }
+
+    static Color[][] colorize(FractalGrid grid, RegexColorizer colorizer) {
+        Color[][] colorGrid = new Color[grid.side()][grid.side()];
+        for (int i = 0; i < grid.side(); i++) {
+            for (int j = 0; j < grid.side(); j++) {
+                Color pixelColor = colorizer.colorForSignature(grid.signatureOf(i, j));
                 colorGrid[j][i] = pixelColor;
             }
         }
+        return colorGrid;
+    }
 
-        Files.createDirectories(Paths.get(DEFAULT_OUTPUT_ASCII).getParent());
-        try (BufferedWriter w = Files.newBufferedWriter(Paths.get(DEFAULT_OUTPUT_ASCII), Charset.forName("UTF-8"))) {
-            w.write(asciiConverter.convert(colorGrid, parsedArgs.pixelSize()));
+    static void prepareOutputFolder() throws IOException {
+        Files.createDirectories(DEFAULT_OUTPUT_DIRECTORY);
+    }
+
+    static void outputAscii(Color[][] colorizedGrid, int pixelSize) throws IOException {
+        AsciiImageConverter asciiConverter = new AsciiImageConverter();
+        try (BufferedWriter w = Files.newBufferedWriter(
+                DEFAULT_OUTPUT_DIRECTORY.resolve(DEFAULT_OUTPUT_FILE_ASCII),
+                Charset.forName("UTF-8"))) {
+            w.write(asciiConverter.convert(colorizedGrid, pixelSize));
         }
+    }
 
-        PngImageConverter pngConverter = new PngImageConverter(new File(DEFAULT_OUTPUT_PNG));
-        pngConverter.convert(colorGrid, parsedArgs.pixelSize());
+    static void outputPng(Color[][] colorizedGrid, int pixelSize) {
+        PngImageConverter pngConverter = new PngImageConverter(
+                DEFAULT_OUTPUT_DIRECTORY.resolve(DEFAULT_OUTPUT_FILE_PNG).toFile());
+        pngConverter.convert(colorizedGrid, pixelSize);
     }
 
     public static void main(String[] args) {

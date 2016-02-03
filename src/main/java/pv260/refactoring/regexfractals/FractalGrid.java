@@ -32,6 +32,10 @@ public class FractalGrid {
 		return signaturesArray[x][y];
 	}
 
+    public int side(){
+        return signaturesArray.length;
+    }
+
 	/**
 	 * One quarter of the parents space
 	 * top left is 2, to right is 1,

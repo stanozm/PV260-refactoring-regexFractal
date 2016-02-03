@@ -3,6 +3,10 @@ package pv260.refactoring.regexfractals;
 import static java.util.Arrays.asList;
 import java.util.Collections;
 import java.util.List;
+import static pv260.refactoring.regexfractals.Quadrant.LOWER_LEFT;
+import static pv260.refactoring.regexfractals.Quadrant.LOWER_RIGHT;
+import static pv260.refactoring.regexfractals.Quadrant.UPPER_RIGHT;
+import static pv260.refactoring.regexfractals.Quadrant.UPPER_LEFT;
 
 /**
  * Grid of the Fractal stored in an array
@@ -44,7 +48,6 @@ public class FractalGrid {
         private String accumulatedSignature;
         private boolean isLeaf = false;
         private List<QuadrantSlice> children = Collections.emptyList();
-        private char signatureAddend;
 
         /**
          * use for root
@@ -55,10 +58,10 @@ public class FractalGrid {
             this.accumulatedY = 0;
             this.accumulatedSignature = "";
             children = asList(
-                    new QuadrantSlice(size / 2, accumulatedX, accumulatedY, accumulatedSignature, true, true),
-                    new QuadrantSlice(size / 2, accumulatedX, accumulatedY, accumulatedSignature, true, false),
-                    new QuadrantSlice(size / 2, accumulatedX, accumulatedY, accumulatedSignature, false, true),
-                    new QuadrantSlice(size / 2, accumulatedX, accumulatedY, accumulatedSignature, false, false)
+                    new QuadrantSlice(size / 2, accumulatedX, accumulatedY, accumulatedSignature, UPPER_RIGHT),
+                    new QuadrantSlice(size / 2, accumulatedX, accumulatedY, accumulatedSignature, UPPER_LEFT),
+                    new QuadrantSlice(size / 2, accumulatedX, accumulatedY, accumulatedSignature, LOWER_LEFT),
+                    new QuadrantSlice(size / 2, accumulatedX, accumulatedY, accumulatedSignature, LOWER_RIGHT)
             );
         }
 
@@ -66,35 +69,19 @@ public class FractalGrid {
          * use for children
          * @param size the size left for this slice
          */
-        public QuadrantSlice(int size, int parentX, int parentY, String parentSignature, boolean isRightQuadrant, boolean isTopQuadrant) {
-            this.accumulatedX = parentX + (isRightQuadrant ? size : 0);
-            this.accumulatedY = parentY + (!isTopQuadrant ? size : 0);
-            calculateSignatureAddend(isRightQuadrant, isTopQuadrant);
-            this.accumulatedSignature = parentSignature + signatureAddend;
+        public QuadrantSlice(int size, int parentX, int parentY, String parentSignature, Quadrant quadrant) {
+            this.accumulatedX = parentX + quadrant.xAddend(size);
+            this.accumulatedY = parentY + quadrant.yAddend(size);
+            this.accumulatedSignature = parentSignature + quadrant.signatureAddend();
             if (size == 1) {
                 isLeaf = true;
             } else { // this is not a child, so create more slices and make those children of this
                 children = asList(
-                        new QuadrantSlice(size / 2, accumulatedX, accumulatedY, accumulatedSignature, true, true),
-                        new QuadrantSlice(size / 2, accumulatedX, accumulatedY, accumulatedSignature, true, false),
-                        new QuadrantSlice(size / 2, accumulatedX, accumulatedY, accumulatedSignature, false, true),
-                        new QuadrantSlice(size / 2, accumulatedX, accumulatedY, accumulatedSignature, false, false)
+                        new QuadrantSlice(size / 2, accumulatedX, accumulatedY, accumulatedSignature, UPPER_RIGHT),
+                        new QuadrantSlice(size / 2, accumulatedX, accumulatedY, accumulatedSignature, UPPER_LEFT),
+                        new QuadrantSlice(size / 2, accumulatedX, accumulatedY, accumulatedSignature, LOWER_LEFT),
+                        new QuadrantSlice(size / 2, accumulatedX, accumulatedY, accumulatedSignature, LOWER_RIGHT)
                 );
-            }
-        }
-
-        /**
-         * calculate what quadrant this is and thus what it adds to the signature
-         */
-        private void calculateSignatureAddend(boolean isRightQuadrant, boolean isTopQuadrant) {
-            if (isRightQuadrant && isTopQuadrant) {
-                signatureAddend = '1';
-            } else if (!isRightQuadrant && isTopQuadrant) {
-                signatureAddend = '2';
-            } else if (!isRightQuadrant && !isTopQuadrant) {
-                signatureAddend = '3';
-            } else if (isRightQuadrant && !isTopQuadrant) {
-                signatureAddend = '4';
             }
         }
 
